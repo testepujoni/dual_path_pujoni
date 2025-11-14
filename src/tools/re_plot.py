@@ -497,7 +497,7 @@ def code_switching_patterns_model_comparison():
 
     if create_csv_files:
         num_sim = 40
-        for m in ["early", "esen", "enes"]:
+        for m in ["early", "pten", "enpt"]:
             create_dataframes_for_plots(
                 results_dir=f"{results_dir}/{m}",
                 epoch_from=0,
@@ -510,14 +510,14 @@ def code_switching_patterns_model_comparison():
         plt.l1_performance_all_models()
         plt.l2_performance_all_models()
         # plt.plot_code_switches_from_all_models()
-        # plt.print_switches_per_model(models=('early', 'esen', 'enes'))
+        # plt.print_switches_per_model(models=('early', 'pten', 'enpt'))
         # plt.plot_code_switch_types_per_model()
         # plt.plot_code_switche_types_per_pos_for_all_models()
 
 
 def plot_l1_with_code_switches(
     results_dir="../../simulations/messageless/messageless_balanced",
-    languages=["en", "es"],
+    languages=["en", "pt"],
 ):
     df = pd.read_csv(
         f"{results_dir}/performance_per_lang.csv",
@@ -542,7 +542,7 @@ cognate_list_fname = None  # '../cognates_of_interest.in'  # 'all_cognates.in'
 def plot_l1_l2_performance_cognate_models(results_dir="../../simulations/cog_paper/"):
     plt = Plotter(results_dir=results_dir)
     for testset in ["generic"]:  # ['bos', 'eos', 'generic']:
-        for model in ["balanced", "enes", "esen"]:
+        for model in ["balanced", "enpt", "pten"]:
             for m in ["cog1", "cog2"]:
                 print(f"{results_dir}/{testset}/{model}/{m}/performance_per_lang.csv")
                 df = pd.read_csv(
@@ -553,7 +553,7 @@ def plot_l1_l2_performance_cognate_models(results_dir="../../simulations/cog_pap
                     dtype={"epoch": int},
                 )
                 l2_lang = model[-2:] if model != "balanced" else None
-                lang = [model[-4:-2]] if model != "balanced" else ["en", "es"]
+                lang = [model[-4:-2]] if model != "balanced" else ["en", "pt"]
                 if model != "balanced":
                     df.l2_epoch = 10
                 print(lang, l2_lang)
@@ -576,7 +576,7 @@ def generate_and_plot_cognate_files(
     per_switch_direction,
     results_dir="../../simulations/cog_paper",
     testset="generic",
-    simulations=["balanced", "enes", "esen"],
+    simulations=["balanced", "enpt", "pten"],
     create_files=True,
     create_csv=True,
     only_last_epoch=True,
@@ -599,12 +599,12 @@ def plot_regression_analysis_results(
 ):
     plt = Plotter(results_dir=results_dir)
     for fname, ylim in [
-        ("cog_enes_esen_sim_per_L1", 3)
-    ]:  # , ('cog_enes_esen_sim_per_L2', 30),
-        # ('cog_balanced_enes_esen_sim', 26)]:
+        ("cog_enpt_pten_sim_per_L1", 3)
+    ]:  # , ('cog_enpt_pten_sim_per_L2', 30),
+        # ('cog_balanced_enpt_pten_sim', 26)]:
         plt.plot_merged_cognate_csv(
             df_name=fname, ylim=ylim
-        )  # cog_enes_all_esen_all_sim_per_L1')#_per_L2
+        )  # cog_enpt_all_pten_all_sim_per_L1')#_per_L2
 
 
 if __name__ == "__main__":

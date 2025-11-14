@@ -60,6 +60,22 @@ class InputFormatter:
         self.lexicon_df = pd.read_csv(
             os.path.join(self.directory, "lexicon.csv"), sep=",", header=0
         )  # 1st line:header
+        self.morpheme_columns = {
+            lang: f"morpheme_{lang}"
+            for lang in self.L.values()
+            if f"morpheme_{lang}" in self.lexicon_df
+        }
+        self.syntactic_gender_columns = {
+            lang: f"syntactic_gender_{lang}"
+            for lang in self.L.values()
+            if f"syntactic_gender_{lang}" in self.lexicon_df
+        }
+        self.l2_code = self.L.get(2)
+        self.l2_morpheme_col = (
+            self.morpheme_columns.get(self.l2_code)
+            if self.l2_code in self.morpheme_columns
+            else None
+        )
         self.cognate_list = cognate_list
         if cognate_list:
             self.lexicon_df.loc[
@@ -87,19 +103,20 @@ class InputFormatter:
             original_form = []
             false_friends_form = []
             ff_lexicon = pd.read_csv(false_friends_lexicon)
+            l2_column = self.l2_morpheme_col
             ff_word = ff_lexicon.loc[
                 ff_lexicon.is_false_friend == True, "morpheme_en"
             ].unique()
             for concept in ff_lexicon.loc[
-                ff_lexicon.morpheme_es.isin(ff_word), "concept"
+                ff_lexicon[l2_column].isin(ff_word), "concept"
             ]:
                 original_form.append(
                     self.lexicon_df.loc[
-                        self.lexicon_df.concept == concept, "morpheme_es"
+                        self.lexicon_df.concept == concept, l2_column
                     ].iloc[0]
                 )
                 false_friends_form.append(
-                    ff_lexicon.loc[ff_lexicon.concept == concept, "morpheme_es"].iloc[0]
+                    ff_lexicon.loc[ff_lexicon.concept == concept, l2_column].iloc[0]
                 )
             d = dict(zip(original_form, false_friends_form))
             self.false_friends_replacement_dict = {
@@ -156,16 +173,19 @@ class InputFormatter:
 
         self.auxiliary_idx = self.df_query_to_idx("pos == 'aux'")
         self.to_prepositions_idx = self.df_query_to_idx("pos == 'prep'")
-        self.haber_idx = (
-            self.df_query_to_idx("morpheme_es == 'ha'", lang="es")[0]
-            if auxiliary_experiment
-            else []
-        )
-        self.tener_idx = (
-            self.df_query_to_idx("morpheme_es == 'tiene'", lang="es")[0]
-            if auxiliary_experiment
-            else []
-        )
+        self.haber_idx = []
+        self.tener_idx = []
+        if auxiliary_experiment and self.l2_code and self.l2_morpheme_col:
+            haber_idx = self.df_query_to_idx(
+                "pos == 'aux' and aspect == 'perfect' and tense == 'present'",
+                lang=self.l2_code,
+            )
+            tener_idx = self.df_query_to_idx(
+                "pos == 'verb' and type == 'possession' and tense == 'present'",
+                lang=self.l2_code,
+            )
+            self.haber_idx = haber_idx[0] if haber_idx else []
+            self.tener_idx = tener_idx[0] if tener_idx else []
         self.idx_pronoun = self.df_query_to_idx("pos == 'pron'")
         self.determiners = self.df_query_to_idx("pos == 'det'")
         self.tense_markers = self.df_query_to_idx(
@@ -233,18 +253,19 @@ class InputFormatter:
             os.system(f"sed -i -e 's/=def,/=defpro:0.66,/g' {new_directory}/t*.in")
             os.system(f"sed -i -e 's/=pron,/=defpro,/g' {new_directory}/t*.in")
 
-        if (
-            self.replace_haber_tener
-        ):  # call sed to replace training and test files with "tener"
-            os.system(f"sed -i -e 's/ ha / tiene /g' {new_directory}/t*.in")
-            self.lexicon_df.loc[
-                (self.lexicon_df.pos == "aux")
-                & (self.lexicon_df.aspect == "perfect")
-                & (self.lexicon_df.tense == "present"),
-                "morpheme_es",
-            ] = "tiene"
-        elif self.test_haber_frequency:
-            self.make_haber_and_tener_synonyms(new_directory)
+        if self.l2_code == "es":
+            if (
+                self.replace_haber_tener
+            ):  # call sed to replace training and test files with "tener"
+                os.system(f"sed -i -e 's/ ha / tiene /g' {new_directory}/t*.in")
+                self.lexicon_df.loc[
+                    (self.lexicon_df.pos == "aux")
+                    & (self.lexicon_df.aspect == "perfect")
+                    & (self.lexicon_df.tense == "present"),
+                    self.l2_morpheme_col,
+                ] = "tiene"
+            elif self.test_haber_frequency:
+                self.make_haber_and_tener_synonyms(new_directory)
 
         if os.path.exists(os.path.join(self.directory, self.training_set)):
             (
@@ -303,6 +324,8 @@ class InputFormatter:
             self.allowed_structures = self.read_allowed_pos()
 
     def make_haber_and_tener_synonyms(self, directory):
+        if self.l2_code != "es":
+            return
         fname = f"{directory}/{self.training_set}"
         sim = directory.split("/")[-1]
         num = int(
@@ -749,12 +772,13 @@ class InputFormatter:
                 f"switched before: {self.sentence_from_indices(sentence_indices[:target_idx])} "
                 f"{switched_before}"
             )
+            second_lang = self.l2_code
             switched_before_es_en = (
-                True if switched_before and target_lang == "es" else False
+                True if switched_before and target_lang == second_lang else False
             )
             switched_at = idx_of_interest not in target_sentence_idx
             logging.debug(f"switched at: {idx_of_interest}, {switched_at}")
-            switched_at_es_en = switched_at and target_lang == "es"
+            switched_at_es_en = switched_at and target_lang == second_lang
 
             switched_right_after = self.is_code_switched(
                 sentence_indices[target_idx : target_idx + 2],
@@ -767,7 +791,7 @@ class InputFormatter:
                 f"{switched_right_after}"
             )
             switched_right_after_es_en = (
-                True if switched_right_after and target_lang == "es" else False
+                True if switched_right_after and target_lang == second_lang else False
             )
 
             switched_one_after = self.is_code_switched(
@@ -781,7 +805,7 @@ class InputFormatter:
                 f"{switched_one_after}"
             )
             switched_one_after_es_en = (
-                True if switched_one_after and target_lang == "es" else False
+                True if switched_one_after and target_lang == second_lang else False
             )
 
             # anywhere after point of interest
@@ -795,7 +819,7 @@ class InputFormatter:
                 f"{switched_after_anywhere}"
             )
             switched_after_anywhere_es_en = (
-                True if switched_after_anywhere and target_lang == "es" else False
+                True if switched_after_anywhere and target_lang == second_lang else False
             )
 
             point_of_interest_produced_last = (
@@ -871,17 +895,18 @@ class InputFormatter:
         )
         df.message = df.message.str.strip()  # strip whitespace
         if self.cognate_list:
-            cognate_translation = self.lexicon_df.loc[
-                self.lexicon_df.is_cognate == True, "morpheme_es"
-            ].unique()
-            cognate_word = self.lexicon_df.loc[
-                self.lexicon_df.is_cognate == True, "morpheme_en"
-            ].unique()
-            d = dict(zip(cognate_translation, cognate_word))
-            d = {r"\b{}\b".format(k): v for k, v in d.items()}  # add word boundaries
-            df["target_sentence"] = df["target_sentence"].replace(
-                to_replace=d, regex=True
-            )
+            if self.l2_morpheme_col:
+                cognate_translation = self.lexicon_df.loc[
+                    self.lexicon_df.is_cognate == True, self.l2_morpheme_col
+                ].unique()
+                cognate_word = self.lexicon_df.loc[
+                    self.lexicon_df.is_cognate == True, "morpheme_en"
+                ].unique()
+                d = dict(zip(cognate_translation, cognate_word))
+                d = {r"\b{}\b".format(k): v for k, v in d.items()}  # add word boundaries
+                df["target_sentence"] = df["target_sentence"].replace(
+                    to_replace=d, regex=True
+                )
         if self.false_friends_replacement_dict:
             df["target_sentence"] = df["target_sentence"].replace(
                 to_replace=self.false_friends_replacement_dict, regex=True

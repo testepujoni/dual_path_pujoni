@@ -15,7 +15,7 @@ class Plotter:
         self.results_dir = results_dir
         self.fname_suffix = ""
         self.bar_width = 0.3
-        self.languages = ["en", "es"]
+        self.languages = ["en", "pt"]
         self.rename_label = {
             "adj": "adjective",
             "aux": "auxiliary",
@@ -109,15 +109,15 @@ class Plotter:
         if "_L" in df_name:  # L1 or L2
             groups.append("switch_from")
         print(
-            "enes:",
-            len(df[df.simulation == "enes"]),
-            ", esen",
-            len(df[df.simulation == "esen"]),
+            "enpt:",
+            len(df[df.simulation == "enpt"]),
+            ", pten",
+            len(df[df.simulation == "pten"]),
             ", balanced:",
             len(df[df.simulation == "balanced"]),
         )
-        # print('cognate enes:', len(df[(df.simulation == 'enes')&(df.model=='cognate')]), ', esen',
-        #      len((df[df.simulation == 'esen'])&(df.model=='cognate'))))
+        # print('cognate enpt:', len(df[(df.simulation == 'enpt')&(df.model=='cognate')]), ', pten',
+        #      len((df[df.simulation == 'pten'])&(df.model=='cognate'))))
 
         gb = df.groupby(groups).apply(
             lambda dft: pd.Series(
@@ -148,9 +148,9 @@ class Plotter:
         )
 
         labels = (
-            ["L1 English", "L1 Spanish"]
+            ["L1 English", "L1 Portuguese"]
             if "_L" in df_name
-            else ["Balanced", "L1 English", "L1 Spanish"]
+            else ["Balanced", "L1 English", "L1 Portuguese"]
         )
         ax.set_xticklabels(labels)
 
@@ -565,7 +565,7 @@ class Plotter:
 
             ax.set_xticks(index_size + self.bar_width / len(all_labels))
             ax.set_ylim(bottom=0)
-            ax.legend(["Switch into Spanish", "Switch into English"], loc="upper left")
+            ax.legend(["Switch into Portuguese", "Switch into English"], loc="upper left")
             ax.set_xticklabels(
                 [self.rename_label.get(x, x) for x in all_labels], rotation=55
             )  # rotate labels to fit
@@ -577,7 +577,7 @@ class Plotter:
             plt.close()
 
     def plot_code_switche_types_per_pos_for_all_models(
-        self, models=("early", "enes", "esen"), l2_epoch=25, ylim=7
+        self, models=("early", "enpt", "pten"), l2_epoch=25, ylim=7
     ):
         sns.set_style("white")
         code_switch_types = ["insertional", "alternational", "ambiguous"]
@@ -596,8 +596,8 @@ class Plotter:
         }
         legend = {
             "early": "Early",
-            "enes": "L1 English",
-            "esen": "L1 Spanish",
+            "enpt": "L1 English",
+            "pten": "L1 Portuguese",
             "messageless_balanced": "Early",
         }
         correct_sentences = {}
@@ -725,14 +725,14 @@ class Plotter:
             )
 
     def plot_code_switch_types_per_model(
-        self, models=("early", "enes", "esen"), bar_width=0.25, l2_epoch=25
+        self, models=("early", "enpt", "pten"), bar_width=0.25, l2_epoch=25
     ):
         sns.set_style("white")
         code_switch_types = ["alternational", "insertional", "ambiguous"]
         legend = {
             "early": "Early",
-            "enes": "L1 English",
-            "esen": "L1 Spanish",
+            "enpt": "L1 English",
+            "pten": "L1 Portuguese",
             "messageless_balanced": "Early",
         }
 
@@ -819,7 +819,7 @@ class Plotter:
             plt.savefig(self.get_plot_path(network_num, f"switch_types_{lang}"))
             plt.close()
 
-    def performance_all_models(self, models=("enes", "esen", "early")):
+    def performance_all_models(self, models=("enpt", "pten", "early")):
         for m in models:
             df = pd.read_csv(
                 f"{self.results_dir}/{m}{self.fname_suffix}/performance.csv",
@@ -830,7 +830,7 @@ class Plotter:
             )
             self.performance(df, fname=f"performance_{m}")
 
-    def l1_performance_all_models(self, models=("enes", "esen", "early")):
+    def l1_performance_all_models(self, models=("enpt", "pten", "early")):
         for m in models:
             df = pd.read_csv(
                 f"{self.results_dir}/{m}{self.fname_suffix}/performance_per_lang.csv",
@@ -927,9 +927,9 @@ class Plotter:
         plt.xlabel("epochs")
         plot_label = {
             "l1_performance_early_en": "Balanced model tested on English",
-            "l1_performance_early_es": "Balanced model tested on Spanish",
-            "l1_performance_enes_en": "L1 English model tested on English",
-            "l1_performance_esen_es": "L1 Spanish model tested on Spanish",
+            "l1_performance_early_pt": "Balanced model tested on Portuguese",
+            "l1_performance_enpt_en": "L1 English model tested on English",
+            "l1_performance_pten_pt": "L1 Portuguese model tested on Portuguese",
         }
         ylabel = ""
         if fname in plot_label:
@@ -953,7 +953,7 @@ class Plotter:
         plt.savefig(self.get_plot_path(len(df.network_num.unique()), fname))
         plt.close()
 
-    def l2_performance_all_models(self, models=("enes", "esen")):
+    def l2_performance_all_models(self, models=("enpt", "pten")):
         for m in models:
             df = pd.read_csv(
                 f"{self.results_dir}/{m}{self.fname_suffix}/performance_per_lang.csv",
@@ -1034,8 +1034,8 @@ class Plotter:
             )
 
         plot_labels = {
-            "l2_performance_enes_es": "L1 English model tested on Spanish",
-            "l2_performance_esen_en": "L1 Spanish model tested on English",
+            "l2_performance_enpt_pt": "L1 English model tested on Portuguese",
+            "l2_performance_pten_en": "L1 Portuguese model tested on English",
         }
         plt.xlabel("epochs")
         plt.ylabel(plot_labels.get(fname, ""))
@@ -1055,7 +1055,7 @@ class Plotter:
 
     def plot_code_switches_from_all_models(
         self,
-        models=("enes", "esen"),
+        models=("enpt", "pten"),
         fname="code_switching_all",
         include_swarmplot=True,
     ):
@@ -1071,8 +1071,8 @@ class Plotter:
             df = df[df.switch_from == m[2:]]
             df["model"] = m
             frames.append(df)
-            # color_model = {'early': '#0173b2', 'enes': '#de8f05', 'esen': '#029E73'}
-            color_model = {"enes": "#0173b2", "esen": "#de8f05"}
+            # color_model = {'early': '#0173b2', 'enpt': '#de8f05', 'pten': '#029E73'}
+            color_model = {"enpt": "#0173b2", "pten": "#de8f05"}
             if include_swarmplot:
                 ax = sns.swarmplot(
                     x="epoch",
@@ -1096,8 +1096,8 @@ class Plotter:
         handles, labels = ax.get_legend_handles_labels()
         rename_labels = {
             "early": "Balanced",
-            "enes": "L1 English",
-            "esen": "L1 Spanish",
+            "enpt": "L1 English",
+            "pten": "L1 Portuguese",
         }
         plt.legend(
             labels=[rename_labels[x] for x in labels[1:]],
@@ -1121,7 +1121,7 @@ class Plotter:
 
     def print_switches_per_model(
         self,
-        models=("early", "enes", "esen"),
+        models=("early", "enpt", "pten"),
         l2_epoch=25,
         print_total=True,
         n_sample=10000,

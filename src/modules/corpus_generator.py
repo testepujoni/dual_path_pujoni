@@ -49,6 +49,17 @@ class SetsGenerator:
         self.L = self.get_languages_with_idx(lang)
         self.random = np.random
         self.lexicon_df = self.get_clean_lexicon(lexicon_csv)
+        self.morpheme_columns = {
+            code: f"morpheme_{code}"
+            for code in self.L.values()
+            if f"morpheme_{code}" in self.lexicon_df
+        }
+        self.syntactic_gender_columns = {
+            code: f"syntactic_gender_{code}"
+            for code in self.L.values()
+            if f"syntactic_gender_{code}" in self.lexicon_df
+        }
+        self.l2_code = self.L.get(2)
         self.languages_with_syntactic_gender = [
             lang
             for lang in self.L.values()
@@ -186,7 +197,7 @@ class SetsGenerator:
         self, excluded_sentences, test_spanish_only=True, num_test_sentences=750
     ):
         if test_spanish_only:
-            self.l2_decimal = 1.0 if self.L[2] == "es" else 0.0
+            self.l2_decimal = 1.0 if self.l2_code else 0.0
         perfect_structures = self.generate_aux_perfect_sentence_structures(
             num_test_sentences // 2
         )
@@ -772,6 +783,9 @@ class SetsGenerator:
         """Very similar to convert_nouns_to_cognates"""
         if seed:
             self.random.seed(seed)  # Option to set a seed for consistency
+        l2_column = self.morpheme_columns.get(self.l2_code)
+        if not l2_column:
+            return
         self.lexicon_df.to_csv(
             f"{self.input_dir}/lexicon.csv", encoding="utf-8", index=False
         )
@@ -795,7 +809,7 @@ class SetsGenerator:
                 random_idx, bidirectional=bidirectional
             ):
                 self.lexicon_df.loc[
-                    current_idx, "morpheme_es"
+                    current_idx, l2_column
                 ] = original_morphemes.loc[next_idx]
                 self.lexicon_df.loc[next_idx, "is_false_friend"] = True
         else:
@@ -807,18 +821,18 @@ class SetsGenerator:
                         (self.lexicon_df.pos == "noun")
                         &
                         # (self.lexicon_df.semantic_gender.notnull()) &
-                        (~self.lexicon_df.morpheme_es.isin(all_false_friends))
+                        (~self.lexicon_df[l2_column].isin(all_false_friends))
                         & (~self.lexicon_df.morpheme_en.isin(all_false_friends))
                         & (~self.lexicon_df.concept.isin(excluded_concepts)),
                     ].index,
                     1,
                 )[0]
                 all_false_friends.append(self.lexicon_df.loc[idx, "morpheme_en"])
-                self.lexicon_df.loc[idx, "morpheme_es"] = self.lexicon_df.loc[
+                self.lexicon_df.loc[idx, l2_column] = self.lexicon_df.loc[
                     next_idx, "morpheme_en"
                 ]
                 self.lexicon_df.loc[next_idx, "is_false_friend"] = True
-                all_false_friends.append(self.lexicon_df.loc[idx, "morpheme_es"])
+                all_false_friends.append(self.lexicon_df.loc[idx, l2_column])
         self.lexicon_df.to_csv(
             f"{self.input_dir}/false_friends_lexicon.csv", encoding="utf-8", index=False
         )
@@ -1012,13 +1026,19 @@ class SetsGenerator:
             and morpheme_df["pos"] == "pron"
         ):
             # this is a HACK for pronouns, in case the language has no syntactic gender information
-            other_lang = [l for l in self.L.values() if l not in lang]
+            other_lang = [l for l in self.L.values() if l != lang]
             if other_lang:
                 other_lang = other_lang[0]
             else:
-                other_lang = "es"  # temporary fix: get Spanish gender for pronouns
-            return morpheme_df[f"syntactic_gender_{other_lang}"]
-        return prev_gender
+                other_lang = (
+                    self.l2_code
+                    if self.l2_code and self.l2_code != lang
+                    else self.L.get(1)
+                )
+            column = f"syntactic_gender_{other_lang}" if other_lang else None
+            if column and column in morpheme_df and not pd.isnull(morpheme_df[column]):
+                return morpheme_df[column]
+            return prev_gender
 
     @staticmethod
     def get_semantic_gender(semantic_gender, syntactic_gender):

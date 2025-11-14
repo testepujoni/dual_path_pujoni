@@ -37,17 +37,17 @@ It has been tested on MacOS, Ubuntu, and WSL on Windows; it seems to have encodi
 
 # How to run the simulations
 
-To run `4 simulations` for `20 epochs` that generate Spanish-English `code-switched sentences`, and store the results under a folder named `results`, run:
+To run `4 simulations` for `20 epochs` that generate Portuguese-English `code-switched sentences`, and store the results under a folder named `results`, run:
 
 ```
-python src/start_dual_path.py --sim 4 --epochs 20 --cs --resdir results --lang es en
+python src/start_dual_path.py --sim 4 --epochs 20 --cs --resdir results --lang pt en
 ```
 
 All results are stored under the folder `simulations`. If the flag `--resdir` is used, the results will be under `simulations/results` (the name given at `--resdir`) otherwise they will be stored under:
 
-`simulations/year-month-day/hour_minutes_seconds_esen_sim4_h<number_hidden_units>_c<number_compressed_units>_fw<fixed_weights_value>_e<number_epochs>`
+`simulations/year-month-day/hour_minutes_seconds_enpt_sim4_h<number_hidden_units>_c<number_compressed_units>_fw<fixed_weights_value>_e<number_epochs>`
 
-where `esen` is the language pair (Spanish-English in this case), `sim4` the number of simulations, `h` the number of hidden units and `c` the number of compress units. `fw` is the fixed weight between concepts and roles, and `e20` the number of epochs.
+where `enpt` is the language pair (Portuguese-English in this case), `sim4` the number of simulations, `h` the number of hidden units and `c` the number of compress units. `fw` is the fixed weight between concepts and roles, and `e20` the number of epochs.
 
 ## Lexicon and Structures
 
@@ -60,14 +60,14 @@ python src/start_dual_path.py --structures path_to_new_structures --lexicon path
 An example of the lexicon headers and content:
 
 ```csv
-morpheme_es,morpheme_en,concept,compositional_concept,pos,semantic_gender,syntactic_gender_es,type,tense,aspect,number,inactive,is_cognate,is_false_friend
-la,the,,,det,,F,def,,,,,,
-el,the,,,det,,M,def,,,,,,
-una,a,,,det,,F,indef,,,,,,
-él,he,,,pron,,M,subject,,,,,,
-ella,she,,,pron,,F,subject,,,,,,
-hombre,man,MAN,HUMAN,noun,M,M,,,,,,
-niño,boy,BOY,CHILD,noun,M,M,,,,,,
+morpheme_pt,morpheme_en,concept,compositional_concept,pos,semantic_gender,syntactic_gender_pt,type,tense,aspect,number,inactive,is_cognate,is_false_friend
+a,the,,,det,,F,def,,,,,,
+o,the,,,det,,M,def,,,,,,
+uma,a,,,det,,F,indef,,,,,,
+ele,he,,,pron,,M,subject,,,,,,
+ela,she,,,pron,,F,subject,,,,,,
+homem,man,MAN,HUMAN,noun,M,M,,,,,,
+menino,boy,BOY,CHILD,noun,M,M,,,,,,
 ```
 
 **Note**: The .csv currently uses comma as the column separator. If you open it with MS Excel you might experience encoding issues. If it's not displayed correctly, I recommend using **[LibreOffice](https://www.libreoffice.org/)**.
@@ -88,13 +88,13 @@ and it corresponds to this generic message:
 
 Based on this information and the [lexicon file](data/code-switching/lexicon.csv), the [corpus_generator](src/modules/corpus_generator.py) script [picks a random morpheme](src/modules/corpus_generator.py#369) (word) of that POS and target language.
 
-For instance, to fill the `det` (determiner) position, the script would randomly select one of the [first four items](data/code-switching/lexicon.csv) from the corresponding column; morpheme_en for English, morpheme_es for Spanish.
+For instance, to fill the `det` (determiner) position, the script would randomly select one of the [first four items](data/code-switching/lexicon.csv) from the corresponding column; morpheme_en for English, morpheme_pt for Portuguese.
 
 In some cases, we are interested in restricting the POS. For instance, we might want only animate nouns. In that case, the POS has the filter `noun:animate` and the script only looks for items with a semantic gender (6th column in the lexicon). Some items, such as verbs and participles, have multiple properties: type, tense, aspect, number (see the corresponding lexicon.csv headers). If you notice the POS example above, the auxiliary verb is followed by two colons. This means that the first property (the type) is of no interest, and is therefore left blank, and the second colon refers to the tense, which is "present" in this example.
 
 ### New language pair
 
-To run the model in a different language pair, one will need to alter the lexicon, structures, and give a new language code (e.g., `el` for Greek and `morpheme_el` for Greek words in the lexicon). Make sure you give a 2-letter language code for each language (e.g., `morpheme_el` in the first column of lexicon.csv if the L1 is Greek, and `morpheme_es` in the second column if the L2 is Spanish.)
+To run the model in a different language pair, one will need to alter the lexicon, structures, and give a new language code (e.g., `el` for Greek and `morpheme_el` for Greek words in the lexicon). Make sure you give a 2-letter language code for each language (e.g., `morpheme_el` in the first column of lexicon.csv if the L1 is Greek, and `morpheme_pt` in the second column if the L2 is Portuguese.)
 
 ## Monolingual version
 
@@ -107,15 +107,15 @@ python src/start_dual_path.py --sim 4 --languages en --resdir english
 and 
 
 ```
-python src/start_dual_path.py --sim 4 --languages es --resdir spanish
+python src/start_dual_path.py --sim 4 --languages pt --resdir portuguese
 ```
 
-which use the English-only (`morpheme_en`) or Spanish-only (`morpheme_es`) columns in the lexicon (`lexicon.csv`) and structures (`structures.csv`).
+which use the English-only (`morpheme_en`) or Portuguese-only (`morpheme_pt`) columns in the lexicon (`lexicon.csv`) and structures (`structures.csv`).
 
 **Note**: If there are not enough resources (words) to generate unique sentences in the structures requested in structures.csv, you will need to do one of the following: 
 
 1. increase the entries in lexicon.csv
-2. reduce the structures in structures.csv OR the percentage that a specific structure appears in the training/test sets (column: percentage_es or percentage_en, depending on the language) 
+2. reduce the structures in structures.csv OR the percentage that a specific structure appears in the training/test sets (column: percentage_pt or percentage_en, depending on the language)
 3. decrease the number of generated sets (default: 2000 unique sentences, reduce to, e.g., 1800)
 
 ## Late bilingual models
@@ -125,12 +125,12 @@ To simulate late bilinguals (that are exposed to the L2 later in life), you must
 1. train a monolingual version with the L1
 2. Use the weights of the monolingual model to train a bilingual model.
 
-For instance, if you want to train a late bilingual model with L1 English and L2 Spanish for a total of 40 epochs, you first need to train a *monolingual* English model for the amount of epochs that the speakers are monolingual-only (e.g., 10 for 1/4th of the total epochs). In the monolingual simulation you use the same bilingual lexicon as the final one, but you need to specify that you do not want any L2 input (`--l2-decimal-fraction 0`). In the `--lang` argument the L1 comes first, so in this case provide `--lang en es`, or `--lang es en` for L1 Spanish.
+For instance, if you want to train a late bilingual model with L1 English and L2 Portuguese for a total of 40 epochs, you first need to train a *monolingual* English model for the amount of epochs that the speakers are monolingual-only (e.g., 10 for 1/4th of the total epochs). In the monolingual simulation you use the same bilingual lexicon as the final one, but you need to specify that you do not want any L2 input (`--l2-decimal-fraction 0`). In the `--lang` argument the L1 comes first, so in this case provide `--lang en pt`, or `--lang pt en` for L1 Portuguese.
 
 For monolingual English:
 
 ```
-python src/start_dual_path.py --lang en es --lexicon  data/code-switching/lexicon.csv --structures data/code-switching/structures.csv --epochs 10 --sim 4 --l2-decimal-fraction 0 --resdir monolingual_model
+python src/start_dual_path.py --lang en pt --lexicon  data/code-switching/lexicon.csv --structures data/code-switching/structures.csv --epochs 10 --sim 4 --l2-decimal-fraction 0 --resdir monolingual_model
 ```
 
 After this model is trained:
@@ -140,7 +140,7 @@ After this model is trained:
 - If you want the test the model's code-switching behavior already, use the `--cs` flag.
 
 ```
-python src/start_dual_path.py --epochs 40 --lexicon data/code-switching/lexicon.csv  --structures data/code-switching/structures.csv --sim 4 --l2-epoch 10 --lang en es --sw simulations/monolingual_model --cs
+python src/start_dual_path.py --epochs 40 --lexicon data/code-switching/lexicon.csv  --structures data/code-switching/structures.csv --sim 4 --l2-epoch 10 --lang en pt --sw simulations/monolingual_model --cs
 ```
 
 **Note**: The main difference between the `--l2-epoch` and `--swe` flags is that in the latter case, the `swe`-th weight becomes the initial training weight, and training continues for `--epoch` more epochs. Whereas in the case of `--l2-epoch`, the initial model weights stay intact and training continues for `--epoch` minus `--l2-epoch` epochs.

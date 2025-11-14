@@ -571,7 +571,7 @@ class DualPath:
                     if debug_specific_sentence:
                         produced_sentence = "él has the book ."
                         target_sentence = "él empuja el libro ."
-                        target_lang = "es"
+                        target_lang = self.inputs.l2_code or target_lang
                         logging.info(
                             f"Debugging sentence pair: {produced_sentence} target: {target_sentence}"
                         )
@@ -716,7 +716,7 @@ class DualPath:
                                 ):  # and top_down_language_activation?
                                     correct_meaning = True
                                     # Assumption: we are not interested in inter-sentential,
-                                    # i.e., Spanish sentence when the target language was English
+                                    # i.e., Portuguese sentence when the target language was English
                                     code_switched = False
                                 elif (
                                     cs_type

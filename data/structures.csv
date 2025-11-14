@@ -1,4 +1,4 @@
-message,es,percentage_es,en,percentage_en
+message,pt,percentage_pt,en,percentage_en
 "AGENT=;AGENT-MOD=;ACTION-LINKING=;EVENT-SEM=PRESENT,PROGRESSIVE,AGENT,AGENT-MOD,ACTION-LINKING",det noun:animate adj:animate aux::present:progressive:singular participle:intrans::progressive,5.4,det adj:animate noun:animate aux::present:progressive:singular participle:intrans::progressive,6.5
 "AGENT=;ACTION-LINKING=;EVENT-SEM=PRESENT,PROGRESSIVE,AGENT,ACTION-LINKING",det noun:animate aux::present:progressive:singular participle:intrans::progressive,6.4,det noun:animate aux::present:progressive:singular participle:intrans::progressive,7.5
 "AGENT=pron;ACTION-LINKING=;EVENT-SEM=PRESENT,PROGRESSIVE,AGENT,ACTION-LINKING",pron aux::present:progressive:singular participle:intrans::progressive,5.8,pron aux::present:progressive:singular participle:intrans::progressive,7.0
