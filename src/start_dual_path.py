@@ -118,16 +118,16 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--languages",
-        help="To generate a new set, specify the languages (e.g., en, es)",
+        help="To generate a new set, specify the languages (e.g., en, pt)",
         nargs="*",
-        default=["en", "es"],
+        default=["en", "pt"],
         type=str.lower,
     )
     parser.add_argument(
         "--target-lang",
         nargs="*",
         help="Values for the target language node. It may differ from the "
-        "input languages (e.g., lang=en but target_lang=en es)",
+        "input languages (e.g., lang=en but target_lang=en pt)",
     )
     parser.add_argument("--lrate", help="Learning rate", type=float, default=0.10)
     parser.add_argument(
