@@ -6,6 +6,30 @@ Dual-path is a computational model of (monolingual) sentence production by [Chan
 
 The Bilingual Dual-path model is an extension of Dual-path, aiming to simulate bilingual sentence production and code-switching.
 
+# Aplicativo web de modelagem financeira
+
+O repositório agora inclui uma aplicação web em FastAPI + React que implementa um protótipo de modelagem financeira multidimensional com cenários, drivers, fórmulas e cálculo de demonstrações. Ela foi inspirada na especificação anexada e pode ser usada para explorar rapidamente cenários e dependências de negócio.
+
+## Como executar
+
+1. Instale as dependências:
+
+```
+pip install -r requirements.txt
+```
+
+2. Inicie a API (com dados demo pré-carregados):
+
+```
+python -m src.webapp.app
+```
+
+3. Acesse `http://localhost:8000` e use o front-end React embutido para:
+   - visualizar modelos, cenários e dimensões;
+   - cadastrar drivers e fórmulas;
+   - rodar cálculos por período e fatia dimensional;
+   - exportar rapidamente um relatório de demonstração via endpoint `/models/{model_id}/reports/statement`.
+
 # How it works
 
 The model is trained on pairs of (so far artificially generated) sentences and the corresponding message, which, in turn, contains thematic roles (which I've named AGENT, PATIENT, but you can use a different annotation) that correspond to a concept. For instance, here are two phrases from a training set (the format is: sentence ## message):

@@ -7,3 +7,6 @@ scikits.bootstrap==1.1.0
 joblib==1.2.0
 torch==2.2.0
 lz4==4.0.2
+fastapi==0.111.0
+uvicorn==0.29.0
+pydantic==2.6.4
