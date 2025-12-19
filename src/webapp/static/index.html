@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Plataforma de Modelagem Financeira</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
+    <style>
+      :root {
+        --accent: #5d2df7;
+      }
+      header {
+        margin-bottom: 1rem;
+      }
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.15rem 0.5rem;
+        border-radius: 999px;
+        background: #eef2ff;
+        color: #312e81;
+        font-weight: 600;
+        font-size: 0.85rem;
+      }
+      .grid {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        margin-bottom: 1rem;
+      }
+      .card {
+        border: 1px solid #e5e7eb;
+        padding: 1rem;
+        border-radius: 12px;
+        background: white;
+        box-shadow: 0 10px 25px -15px rgba(0, 0, 0, 0.2);
+      }
+      code {
+        background: #f3f4f6;
+        padding: 0.2rem 0.35rem;
+        border-radius: 6px;
+      }
+      .pill {
+        background: var(--accent);
+        color: white;
+        padding: 0.25rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+      }
+      .muted {
+        color: #6b7280;
+      }
+      .list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.35rem 0.55rem;
+        border-radius: 10px;
+        background: #f8fafc;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <hgroup>
+          <h1>Plataforma de Modelagem Financeira</h1>
+          <p>
+            Grid interativo com cenários, drivers, fórmulas e cálculo de
+            demonstrações. APIs REST e modelo multidimensional para empresas de
+            qualquer porte.
+          </p>
+        </hgroup>
+      </header>
+
+      <div id="app"></div>
+    </main>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <script type="text/babel">
+      const api = {
+        async getModels() {
+          const res = await fetch("/models");
+          return res.json();
+        },
+        async getScenarios(modelId) {
+          const res = await fetch(`/models/${modelId}/scenarios`);
+          return res.json();
+        },
+        async getDrivers(modelId) {
+          const res = await fetch(`/models/${modelId}/drivers`);
+          return res.json();
+        },
+        async getFormulas(modelId) {
+          const res = await fetch(`/models/${modelId}/formulas`);
+          return res.json();
+        },
+        async createDriver(modelId, payload) {
+          const res = await fetch(`/models/${modelId}/drivers`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          return res.json();
+        },
+        async createFormula(modelId, payload) {
+          const res = await fetch(`/models/${modelId}/formulas`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          return res.json();
+        },
+        async calculate(modelId, payload) {
+          const res = await fetch(`/models/${modelId}/calculate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          return res.json();
+        },
+        async report(modelId, payload) {
+          const res = await fetch(`/models/${modelId}/reports/statement`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          return res.json();
+        },
+      };
+
+      const Loader = () => <progress />; // pico will render a thin bar
+
+      const Section = ({ title, subtitle, children }) => (
+        <section className="card">
+          <h3 style={{ marginBottom: "0.25rem" }}>{title}</h3>
+          {subtitle && <p className="muted" style={{ marginTop: 0 }}>{subtitle}</p>}
+          {children}
+        </section>
+      );
+
+      function useAsync(asyncFn, deps) {
+        const [state, setState] = React.useState({ loading: true, data: null });
+        React.useEffect(() => {
+          let mounted = true;
+          setState({ loading: true, data: null });
+          asyncFn().then((data) => mounted && setState({ loading: false, data }));
+          return () => (mounted = false);
+        }, deps);
+        return state;
+      }
+
+      const Summary = ({ model }) => (
+        <Section title="Modelo" subtitle="Metadados e escopo financeiro">
+          <div className="list">
+            <div className="row">
+              <span className="muted">Nome</span>
+              <strong>{model?.name}</strong>
+            </div>
+            <div className="row">
+              <span className="muted">Moeda base</span>
+              <span className="pill">{model?.base_currency}</span>
+            </div>
+            <div className="row">
+              <span className="muted">Owner</span>
+              <strong>{model?.owner}</strong>
+            </div>
+            <div className="row">
+              <span className="muted">Calendário</span>
+              <span>{model?.fiscal_calendar}</span>
+            </div>
+          </div>
+        </Section>
+      );
+
+      const ScenarioPanel = ({ scenarios }) => (
+        <Section
+          title="Cenários"
+          subtitle="Crie variações, herde drivers e compare versões"
+        >
+          <div className="list">
+            {(scenarios || []).map((s) => (
+              <div key={s.id} className="row">
+                <div style={{ display: "flex", gap: "0.65rem", alignItems: "center" }}>
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      width: 12,
+                      height: 12,
+                      borderRadius: "50%",
+                      background: s.color,
+                    }}
+                  ></span>
+                  <div>
+                    <strong>{s.name}</strong>
+                    <div className="muted" style={{ fontSize: "0.85rem" }}>
+                      {s.description || "Sem descrição"}
+                    </div>
+                  </div>
+                </div>
+                <span className="tag">{s.status}</span>
+              </div>
+            ))}
+          </div>
+        </Section>
+      );
+
+      const DriversPanel = ({ drivers, formulas }) => (
+        <Section
+          title="Drivers & Fórmulas"
+          subtitle="Premissas de negócio e lógica de cálculo"
+        >
+          <details open>
+            <summary>Drivers</summary>
+            <div className="list">
+              {(drivers || []).map((d) => (
+                <div key={d.id} className="row">
+                  <div>
+                    <strong>{d.code}</strong> <span className="muted">({d.name})</span>
+                    <div className="muted" style={{ fontSize: "0.85rem" }}>
+                      Dimensões: {d.dimensionality.join(", ") || "Nenhuma"}
+                    </div>
+                  </div>
+                  <span className="tag">Default: {d.default_value}</span>
+                </div>
+              ))}
+            </div>
+          </details>
+          <details open>
+            <summary>Fórmulas</summary>
+            <div className="list">
+              {(formulas || []).map((f) => (
+                <div key={f.id} className="row">
+                  <div>
+                    <strong>{f.target_measure}</strong>
+                    <div className="muted">{f.expression}</div>
+                  </div>
+                  <span className="tag">{f.scope.join(" · ") || "Global"}</span>
+                </div>
+              ))}
+            </div>
+          </details>
+        </Section>
+      );
+
+      const QuickCalc = ({ model, scenarios, onResult }) => {
+        const [scenarioId, setScenarioId] = React.useState("");
+        const [period, setPeriod] = React.useState("2026-01");
+        const [slice, setSlice] = React.useState("Entity=RET,Product=P2");
+
+        React.useEffect(() => {
+          if (scenarios?.length) {
+            setScenarioId(scenarios[0].id);
+          }
+        }, [scenarios]);
+
+        const handleCalculate = async (e) => {
+          e.preventDefault();
+          if (!scenarioId) return;
+          const dimension_slice = {};
+          slice
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .forEach((pair) => {
+              const [k, v] = pair.split("=");
+              if (k && v) dimension_slice[k] = v;
+            });
+          const result = await api.calculate(model.id, {
+            scenario_id: scenarioId,
+            period,
+            dimension_slice,
+          });
+          onResult(result);
+        };
+
+        return (
+          <Section
+            title="Calcular versão"
+            subtitle="Simule rapidamente receita, custos e lucro por cenário e fatia dimensional"
+          >
+            <form onSubmit={handleCalculate} className="grid">
+              <label>
+                Cenário
+                <select
+                  value={scenarioId}
+                  onChange={(e) => setScenarioId(e.target.value)}
+                  required
+                >
+                  <option value="">Selecione...</option>
+                  {(scenarios || []).map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Período (YYYY-MM)
+                <input
+                  type="text"
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value)}
+                  placeholder="2026-01"
+                  required
+                />
+              </label>
+              <label>
+                Filtro dimensional
+                <input
+                  type="text"
+                  value={slice}
+                  onChange={(e) => setSlice(e.target.value)}
+                  placeholder="Entity=RET,Product=P2"
+                />
+                <small>Use chave=valor separando por vírgula.</small>
+              </label>
+              <div>
+                <button type="submit">Calcular</button>
+              </div>
+            </form>
+          </Section>
+        );
+      };
+
+      const ResultCard = ({ result }) => {
+        if (!result) return null;
+        return (
+          <Section title="Resultado" subtitle="Valores calculados pelo engine">
+            <div className="list">
+              {Object.entries(result.measure_values || {}).map(([k, v]) => (
+                <div key={k} className="row">
+                  <strong>{k}</strong>
+                  <span>
+                    {v.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: result.currency || "USD",
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Section>
+        );
+      };
+
+      const App = () => {
+        const modelsState = useAsync(api.getModels, []);
+        const model = modelsState.data?.[0];
+        const scenariosState = useAsync(() => (model ? api.getScenarios(model.id) : Promise.resolve([])), [model?.id]);
+        const driversState = useAsync(() => (model ? api.getDrivers(model.id) : Promise.resolve([])), [model?.id]);
+        const formulasState = useAsync(() => (model ? api.getFormulas(model.id) : Promise.resolve([])), [model?.id]);
+        const [result, setResult] = React.useState(null);
+
+        if (modelsState.loading || !model) return <Loader />;
+
+        return (
+          <>
+            <div className="grid">
+              <Summary model={model} />
+              <ScenarioPanel scenarios={scenariosState.data} />
+              <DriversPanel drivers={driversState.data} formulas={formulasState.data} />
+            </div>
+            <div className="grid">
+              <QuickCalc
+                model={model}
+                scenarios={scenariosState.data}
+                onResult={(res) => setResult(res)}
+              />
+              <ResultCard result={result} />
+            </div>
+          </>
+        );
+      };
+
+      ReactDOM.createRoot(document.getElementById("app")).render(<App />);
+    </script>
+  </body>
+</html>
